@@ -153,7 +153,7 @@ def generateGraph(stars, edges, display=True, save=False, showPlayerCenter=False
 	if display:
 		plt.show()
 	if save:
-		plt.savefig("LatestMap.png", dpi=500)
+		plt.savefig("data/LatestMap.png", dpi=500)
 
 ### Data Collection
 
