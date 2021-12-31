@@ -22,6 +22,7 @@ YELLOW = tuple(0.8*i for i in (1, 1, 0))
 RED = (1,0,0)
 BLACK = (0,0,0)
 WHITE = (1,1,1)
+GRAY = tuple(0.5*i for i in (1, 1, 1))
 ORANGE = tuple(0.8*i for i in (1, 165/265, 0))
 GRAY = (0.5, 0.5, 0.5)
 WAR_STRATEGIES = {	"SWEEP":		0,
@@ -71,9 +72,10 @@ class Edge:
 
 class Player:
 
-	def __init__(self, playerId, militaryPower):
+	def __init__(self, playerId, militaryPower, alias=''):
 		self.playerId = playerId
 		self.militaryPower = militaryPower
+		self.alias = alias
 
 	def getCenter(self, stars):
 		xList = [star.x for star in stars]
@@ -183,9 +185,10 @@ def getData(gameNumber, gameApi):
 		shipCount = player["total_strength"]
 		weaponsTech = player["tech"]["weapons"]["value"]
 		militaryPower = shipCount*weaponsTech
+		alias = player["alias"]
 		if militaryPower == 0:
 			continue
-		playersList.append(Player(uid, militaryPower))
+		playersList.append(Player(uid, militaryPower, alias))
 		if uid == Player.myPlayerId:
 			Player.myPlayer = playersList[-1]
 	playersList.sort(key=attrgetter("militaryPower"), reverse=True)
@@ -196,7 +199,7 @@ def getData(gameNumber, gameApi):
 			"myPlayerId":	myPlayerId,
 			"players":		playersList}
 
-def sweepCapture(myStars, otherStars):
+def expandCapture(myStars, otherStars):
 
 	capturePriority = [	star for star in otherStars
 						if not star.belongsTo(Player.myPlayer)]
@@ -206,6 +209,12 @@ def sweepCapture(myStars, otherStars):
 	for i in range(NUM_CAPTURES):
 		capturePriority[i].setCapturePriority(i+1)
 		capturePriority[i].color = ORANGE
+	nextCap = capturePriority[0]
+	myClosestStar = myStars[0]
+	for star in myStars:
+		if star.getDistance(nextCap) < myClosestStar.getDistance(nextCap):
+			myClosestStar = star
+	myClosestStar.color = GRAY
 
 def communistCapture(myStars, otherStars, players):
 
@@ -219,6 +228,20 @@ def communistCapture(myStars, otherStars, players):
 	for i in range(NUM_CAPTURES):
 		capturePriority[i].setCapturePriority(i+1)
 		capturePriority[i].color = RED
+	nextCap = capturePriority[0]
+	myClosestStar = myStars[0]
+	for star in myStars:
+		if star.getDistance(nextCap) < myClosestStar.getDistance(nextCap):
+			myClosestStar = star
+	myClosestStar.color = GRAY
+
+def showMilitaryPower(players):
+	militaryPowerList = sorted(players, key=attrgetter("militaryPower"), reverse=True)
+	longestNameLength = sorted([len(player.alias) for player in players],
+		reverse=True)[0]
+	for i in range(len(militaryPowerList)):
+		print(f"{i+1}: {militaryPowerList[i].alias:^{longestNameLength}} with a military power of " \
+			f"{militaryPowerList[i].militaryPower}.")
 
 def highlightStars(stars, myStars, otherStars, players):
 
@@ -247,7 +270,8 @@ def highlightStars(stars, myStars, otherStars, players):
 	### Stars to Capture
 
 	communistCapture(myStars, otherStars, players)
-	sweepCapture(myStars, otherStars)
+	showMilitaryPower(players)
+	#expandCapture(myStars, otherStars)
 
 def MST(stars):
 
