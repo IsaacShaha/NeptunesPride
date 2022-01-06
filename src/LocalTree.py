@@ -31,7 +31,7 @@ HOUR = 1/24
 
 ### Dynamic Constants
 
-WAR_STRATEGY = WAR_STRATEGIES["COMMUNISM"]
+WAR_STRATEGY = WAR_STRATEGIES["SWEEP"]
 NUM_CAPTURES = 3
 
 ### Classes
@@ -264,14 +264,16 @@ def highlightStars(stars, myStars, otherStars, players):
 		enemyDistance = INF
 		for enemyStar in otherStars:
 			enemyDistance = min(enemyDistance, myStar.getDistance(enemyStar))
-		if enemyDistance < alliedDistance:
+		if enemyDistance < alliedDistance*2:
 			myStar.setColor(YELLOW)
 
 	### Stars to Capture
 
-	communistCapture(myStars, otherStars, players)
+	if WAR_STRATEGY == WAR_STRATEGIES["COMMUNISM"]:
+	 	communistCapture(myStars, otherStars, players)
+	elif WAR_STRATEGY == WAR_STRATEGIES["SWEEP"]:
+		expandCapture(myStars, otherStars)
 	showMilitaryPower(players)
-	#expandCapture(myStars, otherStars)
 
 def MST(stars):
 
