@@ -25,6 +25,7 @@ WHITE = (1,1,1)
 GRAY = tuple(0.5*i for i in (1, 1, 1))
 ORANGE = tuple(0.8*i for i in (1, 165/265, 0))
 GRAY = (0.5, 0.5, 0.5)
+TEAL = (0, 3/4, 3/4)
 WAR_STRATEGIES = {	"SWEEP":		0,
 					"COMMUNISM":	1}
 HOUR = 1/24
@@ -33,6 +34,7 @@ HOUR = 1/24
 
 WAR_STRATEGY = WAR_STRATEGIES["SWEEP"]
 NUM_CAPTURES = 3
+ALLIES = ["ColdW1nter"]
 
 ### Classes
 
@@ -274,6 +276,16 @@ def highlightStars(stars, myStars, otherStars, players):
 	elif WAR_STRATEGY == WAR_STRATEGIES["SWEEP"]:
 		expandCapture(myStars, otherStars)
 	showMilitaryPower(players)
+
+	### Allied Stars
+
+	allyIds = []
+	for player in players:
+		if player.alias in ALLIES:
+			allyIds.append(player.playerId)
+	for star in otherStars:
+		if star.playerId in allyIds:
+			star.setColor(TEAL)
 
 def MST(stars):
 
