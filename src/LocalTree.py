@@ -1,10 +1,3 @@
-### Edit this section.
-
-#Get this from your game's url.
-GAME_NUMBER = 5440848316334080
-#Get this from settings in your game.
-GAME_API = "sXbvMV"
-
 ### Libraries
 
 import requests
@@ -13,6 +6,7 @@ import networkx as nx
 import math
 import numpy as np
 from operator import attrgetter
+import sys
 
 ### Static Constants
 
@@ -24,8 +18,9 @@ BLACK = (0,0,0)
 WHITE = (1,1,1)
 GRAY = tuple(0.5*i for i in (1, 1, 1))
 ORANGE = tuple(0.8*i for i in (1, 165/265, 0))
-GRAY = (0.5, 0.5, 0.5)
+GRAY = (1/2, 1/2, 1/2)
 TEAL = (0, 3/4, 3/4)
+PURPLE = (1/2, 0, 1/2)
 WAR_STRATEGIES = {	"SWEEP":		0,
 					"COMMUNISM":	1}
 HOUR = 1/24
@@ -34,7 +29,8 @@ HOUR = 1/24
 
 WAR_STRATEGY = WAR_STRATEGIES["SWEEP"]
 NUM_CAPTURES = 3
-ALLIES = ["ColdW1nter"]
+ALLIES = ["Hellfire Renaissance", "Ihaveapsr7"]
+ENEMIES = ["HelicopterParacopter", "Bones6966", "Kryon"]
 
 ### Classes
 
@@ -65,6 +61,9 @@ class Star:
 
 	def setColor(self, color):
 		self.color = color
+
+	def __str__(self):
+		return self.name
 
 class Edge:
 	def __init__(self, star1, star2, weight):
@@ -195,16 +194,20 @@ def getData(gameNumber, gameApi):
 			Player.myPlayer = playersList[-1]
 	playersList.sort(key=attrgetter("militaryPower"), reverse=True)
 
+	started = payload["scanning_data"]["started"]
+
 	return {"starNodes":	starNodes,
 			"myStars":		myStars,
 			"otherStars":	otherStars,
 			"myPlayerId":	myPlayerId,
-			"players":		playersList}
+			"players":		playersList,
+			"started":		started}
 
-def expandCapture(myStars, otherStars):
+def expandCapture(myStars, otherStars, allyIds):
 
 	capturePriority = [	star for star in otherStars
-						if not star.belongsTo(Player.myPlayer)]
+						if not star.belongsTo(Player.myPlayer)
+						and star.playerId not in allyIds]
 	xMean, yMean = Player.myPlayer.getCenter(myStars)
 	capturePriority.sort(key=lambda star:
 		getDistance((star.x, star.y), (xMean, yMean)))
@@ -249,7 +252,10 @@ def highlightStars(stars, myStars, otherStars, players):
 
 	### Frontline Stars
 
-	for enemyStar in otherStars:
+	enemyIds = [player.playerId for player in players if player.alias in ENEMIES]
+	enemyStars = [star for star in otherStars if star.playerId in enemyIds]
+
+	for enemyStar in enemyStars:
 		myClosestStar = None
 		for myStar in myStars:
 			if (myClosestStar == None or
@@ -264,18 +270,10 @@ def highlightStars(stars, myStars, otherStars, players):
 				continue
 			alliedDistance = min(alliedDistance, myStar.getDistance(alliedStar))
 		enemyDistance = INF
-		for enemyStar in otherStars:
+		for enemyStar in enemyStars:
 			enemyDistance = min(enemyDistance, myStar.getDistance(enemyStar))
 		if enemyDistance < alliedDistance*2:
 			myStar.setColor(YELLOW)
-
-	### Stars to Capture
-
-	if WAR_STRATEGY == WAR_STRATEGIES["COMMUNISM"]:
-	 	communistCapture(myStars, otherStars, players)
-	elif WAR_STRATEGY == WAR_STRATEGIES["SWEEP"]:
-		expandCapture(myStars, otherStars)
-	showMilitaryPower(players)
 
 	### Allied Stars
 
@@ -286,6 +284,20 @@ def highlightStars(stars, myStars, otherStars, players):
 	for star in otherStars:
 		if star.playerId in allyIds:
 			star.setColor(TEAL)
+
+	### Enemy Stars
+
+	for star in otherStars:
+		if star.playerId != -1 and star.playerId not in allyIds:
+			star.setColor(PURPLE)
+
+	### Stars to Capture
+
+	if WAR_STRATEGY == WAR_STRATEGIES["COMMUNISM"]:
+	 	communistCapture(myStars, otherStars, players)
+	elif WAR_STRATEGY == WAR_STRATEGIES["SWEEP"]:
+		expandCapture(myStars, otherStars, allyIds)
+	showMilitaryPower(players)
 
 def MST(stars):
 
@@ -338,14 +350,18 @@ def MST(stars):
 	return edges
 
 def main():
+	GAME_NUMBER = int(sys.argv[1])
+	GAME_API = sys.argv[2]
 	data = getData(GAME_NUMBER, GAME_API)
 	stars = data["starNodes"]
 	myStars = data["myStars"]
 	otherStars = data["otherStars"]
 	myPlayerId = data["myPlayerId"]
 	players = data["players"]
+	started = data["started"]
 
-	highlightStars(stars, myStars, otherStars, players)
+	if started:
+		highlightStars(stars, myStars, otherStars, players)
 	edges = MST(myStars)
 	generateGraph(stars, edges, display=False, save=True)
 
